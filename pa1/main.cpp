@@ -4,7 +4,7 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
-constexpr double MY_PI = 3.1415926;
+constexpr double PI = 3.1415926;
 
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
@@ -47,16 +47,12 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
-    float a = rotation_angle/180.0f*MY_PI;
+    float a = rotation_angle/180.0f*PI;
     float c = cosf(a),s = sinf(a);
     model << c,-s,0,0,
-             s,c,0,0,
-             0,0,1,0,
-             0,0,0,1;
-    // TODO: Implement this function
-    // Create the model matrix for rotating the triangle around the Z axis.
-    // Then return it.
-
+             s, c,0,0,
+             0, 0,1,0,
+             0, 0,0,1;
     return model;
 }
 
@@ -66,7 +62,7 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     // Students will implement this function
 
     Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
-    float cota = eye_fov / 180.0f * 3.1415926f ;
+    float cota = eye_fov / 180.0f * 3.1415926f * 0.5f ;
     cota = 1.f/ tanf(cota);
     //右手坐标系
     projection <<   cota/aspect_ratio,0,0,0,
