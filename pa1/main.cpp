@@ -8,13 +8,38 @@ constexpr double MY_PI = 3.1415926;
 
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
+    
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
-
+    Eigen::Vector3f f = -eye_pos;
+    f.normalize();
+    //左手坐标系begin
+//    Eigen::Vector3f u = {0,1,0};
+//    Eigen::Vector3f r = u.cross(f);
+//    view << r.x(),r.y(),r.z(), 0,
+//            u.x(),u.y(),u.z(), 0,
+//            f.x(),f.y(),f.z(),0,
+//            0, 0, 0, 1;
+//    Eigen::Matrix4f translate;
+//    translate << 1, 0, 0, -eye_pos[0],
+//                0, 1, 0, -eye_pos[1],
+//                0, 0, 1,-eye_pos[2],
+//                0, 0, 0, 1;
+    //左手坐标系end
+    
+    //右手坐标系begin
+    Eigen::Vector3f u = {0,1,0};
+    Eigen::Vector3f r = f.cross(u);
+    view << r.x(),r.y(),r.z(), 0,
+            u.x(),u.y(),u.z(), 0,
+            -f.x(),-f.y(),-f.z(),0,
+            0, 0, 0, 1;
     Eigen::Matrix4f translate;
-    translate << 1, 0, 0, -eye_pos[0], 0, 1, 0, -eye_pos[1], 0, 0, 1,
-        -eye_pos[2], 0, 0, 0, 1;
-
-    view = translate * view;
+    translate << 1, 0, 0, -eye_pos[0],
+                0, 1, 0, -eye_pos[1],
+                0, 0, 1,-eye_pos[2],
+                0, 0, 0, 1;
+    //右手坐标系end
+    view =   view * translate;
 
     return view;
 }
@@ -41,13 +66,19 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     // Students will implement this function
 
     Eigen::Matrix4f projection = Eigen::Matrix4f::Identity();
-    float cota = eye_fov / 180.0f * 3.1415926f * 0.5f;
+    float cota = eye_fov / 180.0f * 3.1415926f ;
     cota = 1.f/ tanf(cota);
-    
+    //右手坐标系
     projection <<   cota/aspect_ratio,0,0,0,
                     0,cota,0,0,
                     0,0,(zFar+zNear)/(zFar-zNear),-2.0f*zFar*zNear/(zFar-zNear),
                     0,0,-1,0;
+    
+    //左手坐标系
+//    projection <<   cota/aspect_ratio,0,0,0,
+//                    0,cota,0,0,
+//                    0,0,(zFar+zNear)/(zFar-zNear),-2.0f*zFar*zNear/(zFar-zNear),
+//                    0,0,1,0;
                     
     // TODO: Implement this function
     // Create the projection matrix for the given parameters.
@@ -131,7 +162,7 @@ int main(int argc, const char** argv)
         cv::imshow("image", image);
         key = cv::waitKey(10);
 
-        std::cout << "frame count: " << frame_count++ << '\n';
+        //std::cout << "frame count: " << frame_count++ << '\n';
 
         if (key == 'a') {
             angle += 10;
