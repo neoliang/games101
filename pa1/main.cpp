@@ -43,9 +43,30 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 
     return view;
 }
-
+Eigen::Matrix4f get_rotation(Vector3f axis, float angle)
+{
+    Eigen::Matrix4f I = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f N;
+    float a = angle/180.0f*PI;
+    float c = cosf(a),s = sinf(a);
+    Vector3f n = axis.normalized();
+    N << 0,     -n.z(),  n.y(), 0,
+         n.z(),  0,     -n.x(), 0,
+         -n.y(), n.x(), 0,      0,
+         0,      0,     0,      0;
+    return I + (N*N)*(1-c) + N*s;
+}
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
+    Eigen::Vector3f z = {0,1,0};
+    Eigen::Matrix4f t;
+    t << 1, 0, 0, 0,
+                0, 1, 0, -0.5,
+                0, 0, 1,-2,
+                0, 0, 0, 1;
+    auto r = get_rotation(z,rotation_angle);
+    
+    return t * r ;
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
     float a = rotation_angle/180.0f*PI;
     float c = cosf(a),s = sinf(a);
@@ -65,10 +86,11 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     float cota = eye_fov / 180.0f * 3.1415926f * 0.5f ;
     cota = 1.f/ tanf(cota);
     //右手坐标系
-    projection <<   cota/aspect_ratio,0,0,0,
-                    0,cota,0,0,
-                    0,0,(zFar+zNear)/(zFar-zNear),-2.0f*zFar*zNear/(zFar-zNear),
-                    0,0,-1,0;
+    float zD = zNear-zFar;
+    projection <<   -cota/aspect_ratio,0,0,0,
+                    0,-cota,0,0,
+                    0,0,(zFar+zNear)/zD,-2.0f*zFar*zNear/zD,
+                    0,0,1,0;
     
     //左手坐标系
 //    projection <<   cota/aspect_ratio,0,0,0,
@@ -106,7 +128,7 @@ int main(int argc, const char** argv)
 
     Eigen::Vector3f eye_pos = {0, 0, 5};
 
-    std::vector<Eigen::Vector3f> pos{{2, 0, -2}, {0, 2, -2}, {-2, 0, -2}};
+    std::vector<Eigen::Vector3f> pos{{2, 0, 0}, {0, 2, 0}, {-2, 0, 0}};
 
     std::vector<Eigen::Vector3i> ind{{0, 1, 2}};
 
@@ -137,7 +159,7 @@ int main(int argc, const char** argv)
 
         r.set_model(get_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
-        r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
+        r.set_projection(get_projection_matrix(45, 1, -0.1, -50));
 
         r.draw(pos_id, ind_id, rst::Primitive::Triangle);
 //        Eigen::Vector3f red (255.0f,0.0f,0.0f);
