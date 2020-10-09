@@ -43,18 +43,28 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 
     return view;
 }
+
+Eigen::Matrix4f toMatrix4f(Eigen::Matrix3f m)
+{
+    Eigen::Matrix4f tRet = Eigen::Matrix4f::Zero();
+    tRet.block<3,3>(0,0) = m;
+    tRet.row(3) = (Vector4f){0,0,0,1};
+    return tRet;
+}
 Eigen::Matrix4f get_rotation(Vector3f axis, float angle)
 {
-    Eigen::Matrix4f I = Eigen::Matrix4f::Identity();
-    Eigen::Matrix4f N;
+    Eigen::Matrix3f I = Eigen::Matrix3f::Identity();
+    Eigen::Matrix3f N;
     float a = angle/180.0f*PI;
     float c = cosf(a),s = sinf(a);
     Vector3f n = axis.normalized();
-    N << 0,     -n.z(),  n.y(), 0,
-         n.z(),  0,     -n.x(), 0,
-         -n.y(), n.x(), 0,      0,
-         0,      0,     0,      0;
-    return I + (N*N)*(1-c) + N*s;
+    N << 0,     -n.z(),  n.y(),
+         n.z(),  0,     -n.x(),
+        -n.y(), n.x(), 0;
+    //wikipedia的方法
+    return toMatrix4f(I + (N*N)*(1-c) + N*s);
+    //闫老师的方法 n*n^t
+    //return toMatrix4f(c*I + (1-c)*(n*n.transpose()) + s*N);
 }
 Eigen::Matrix4f get_model_matrix(float rotation_angle)
 {
