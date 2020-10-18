@@ -58,7 +58,7 @@ namespace rst
     class rasterizer
     {
     public:
-        const int AA = 2;//2X2
+        const int AA = 4;//2X2
         rasterizer(int w, int h);
         pos_buf_id load_positions(const std::vector<Eigen::Vector3f>& positions);
         ind_buf_id load_indices(const std::vector<Eigen::Vector3i>& indices);
