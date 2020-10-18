@@ -6,6 +6,7 @@
 
 #include <eigen3/Eigen/Eigen>
 #include <algorithm>
+#include <map>
 #include "global.hpp"
 #include "Triangle.hpp"
 using namespace Eigen;
@@ -67,7 +68,9 @@ namespace rst
         void set_projection(const Eigen::Matrix4f& p);
 
         void set_pixel(const Eigen::Vector3f& point, const Eigen::Vector3f& color);
-
+        void set_pixel(int x ,int y, const Eigen::Vector3f& color);
+        void set_depth(int x ,int y, float depth);
+        float get_depth(int x,int y);
         void clear(Buffers buff);
 
         void draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf_id col_buffer, Primitive type);
