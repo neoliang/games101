@@ -106,7 +106,27 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         rasterize_triangle(t);
     }
 }
-
+static std::vector<Eigen::Vector3f> buf;
+void* rst::rasterizer::data()
+{
+    buf.resize(width*height);
+    for (int i =0; i<height; ++i) {
+        for (int j = 0; j<width; ++j) {
+            Eigen::Vector3f color = Eigen::Vector3f::Zero();
+            for(int xA=0;xA<AA;++xA)
+            {
+                for (int yA=0; yA<AA; ++yA) {
+                    float x = j + 1.0f/AA*xA + 0.5f/AA;
+                    float y = i + 1.0f/AA*yA + 0.5f/AA;
+                    auto ind = (height*AA-1-y*AA)*width*AA + (x*AA);
+                    color += frame_buf[ind];
+                }
+            }
+            buf[(height-1-i)*width+j] = color /(AA*AA);
+        }
+    }
+    return buf.data();
+}
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     auto vs = t.toVector4();
@@ -120,21 +140,36 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
         if(v.y() < down) down = std::max(v.y(),0.0f);
         if(v.y() > up) up = std::min(v.y(), (float)height);
     }
-    for(int y = down;y<up;++y)
+    for(int y_ = down;y_<up;++y_)
     {
-        for(int x = left;x<right;++x)
+        for(int x_ = left;x_<right;++x_)
         {
+            int inside = 0;
             //anti aliasing
-            
-            auto[alpha, beta, gamma] = computeBarycentric2D(x+0.5f, y+0.5f, t.v);
-            if (alpha >=0 && beta >=0 && gamma >=0) {
-                float oldz = get_depth(x, y);
-                float z = alpha * t.v[0].z() + beta * t.v[1].z() * gamma * t.v[2].z();
-                if (z < oldz) {
-                    set_pixel(x, y,t.getColor());
-                    set_depth(x, y, z);
+            Eigen::Vector3f color = Eigen::Vector3f::Zero();
+            for(int xA=0;xA<AA;++xA)
+            {
+                for (int yA=0; yA<AA; ++yA) {
+                    float x = x_ + 1.0f/AA*xA + 0.5f/AA;
+                    float y = y_ + 1.0f/AA*yA + 0.5f/AA;
+                    auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
+                    if (alpha >=0 && beta >=0 && gamma >=0) {
+                        ++inside;
+                        float oldz = get_depth(x, y);
+                        float newDepth = alpha * t.v[0].z() + beta * t.v[1].z() * gamma * t.v[2].z();
+                        if(newDepth < oldz){
+                            color += t.getColor();
+                            set_depth(x, y, newDepth);
+                            set_pixel(x, y,t.getColor());
+                        }
+                        
+                    }
                 }
-
+            }
+            float avg = 1.0f/(AA*AA);
+            if(inside/(AA*AA) > 0){
+                //set_pixel(x_, y_,color*avg);
+                
             }
         }
     }
@@ -179,8 +214,8 @@ void rst::rasterizer::clear(rst::Buffers buff)
 
 rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 {
-    frame_buf.resize(w * h);
-    depth_buf.resize(w * h);
+    frame_buf.resize(w * h*AA*AA);
+    depth_buf.resize(w * h*AA*AA);
 }
 
 int rst::rasterizer::get_index(int x, int y)
@@ -188,21 +223,22 @@ int rst::rasterizer::get_index(int x, int y)
     return (height-1-y)*width + x;
 }
 
-void rst::rasterizer::set_pixel(int x ,int y, const Eigen::Vector3f& color)
+void rst::rasterizer::set_pixel(float x ,float y, const Eigen::Vector3f& color)
 {
-    auto ind = (height-1-y)*width + x;
+    auto ind = (height*AA-1-y*AA)*width*AA + (x*AA);
     frame_buf[ind] = color;
 }
 
-void rst::rasterizer::set_depth(int x ,int y, float depth)
+void rst::rasterizer::set_depth(float x ,float y, float depth)
 {
-    auto ind = (height-1-y)*width + x;
+    auto ind = (height*AA-1-y*AA)*width*AA + (x*AA);
     depth_buf[ind] = depth;
 
 }
-float rst::rasterizer::get_depth(int x, int y)
+float rst::rasterizer::get_depth(float x, float y)
 {
-    return depth_buf[get_index(x, y)];
+    auto ind = (height*AA-1-y*AA)*width*AA + (x*AA);
+    return depth_buf[ind];
 }
 
 void rst::rasterizer::set_pixel(const Eigen::Vector3f& point, const Eigen::Vector3f& color)
