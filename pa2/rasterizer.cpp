@@ -110,6 +110,7 @@ void* rst::rasterizer::data()
 {
     return frame_buf.data();
 }
+//
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     auto vs = t.toVector4();
@@ -127,9 +128,9 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     {
         for(int x_ = left;x_<right;++x_)
         {
-            int inside = 0;
+            int coverageCount = 0;
             //anti aliasing
-            Eigen::Vector3f color = Eigen::Vector3f::Zero();
+            
             for(int xA=0;xA<AA;++xA)
             {
                 for (int yA=0; yA<AA; ++yA) {
@@ -141,8 +142,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
                         float oldz = get_depth(x, y);
                         float newDepth = alpha * t.v[0].z() + beta * t.v[1].z() * gamma * t.v[2].z();
                         if(newDepth < oldz){
-                            ++inside;
-                            color += t.getColor();
+                            ++coverageCount;
                             set_depth(x, y, newDepth);
                             //set_pixel(x, y,t.getColor());
                         }
@@ -150,10 +150,12 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
                     }
                 }
             }
-            float avg = 1.0f/(AA*AA);
-            if(inside > 1)
+            
+            if(coverageCount > 0)
             {
-                set_pixel(x_, y_,color*avg);
+                Eigen::Vector3f color = t.getColor();
+                float coverage = 1.0f/(AA*AA) * coverageCount;
+                set_pixel(x_, y_,color*coverage);
             }
         }
     }
